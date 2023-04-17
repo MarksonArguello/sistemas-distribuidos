@@ -22,7 +22,6 @@ class Server:
             # depois de conectar-se, espera uma mensagem (chamada pode ser BLOQUEANTE))
             msg = conn.recv(1024) 
 
-            # verifica se eh a mensagem de fim
             if not msg: break
 
             # envia mensagem de resposta
