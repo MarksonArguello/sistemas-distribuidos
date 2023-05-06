@@ -9,7 +9,6 @@ import sys
 entradas = [sys.stdin]
 
 class Client:
-
     def __init__(self, port):
         self.HOST = 'localhost' # maquina onde esta o par passivo
         self.PORT = port
@@ -27,7 +26,7 @@ class Client:
         self.sock.close()
 
     def enviar(self, data):
-        self.sock.send(data)
+        self.sock.send(bytearray(data, 'utf-8'))
 
     def receber(self):
         return self.sock.recv(1024).decode('utf-8')
@@ -42,7 +41,16 @@ class Server:
         
         #armazena as conexoes ativas
         self.conexoes = {}
-        self.sock = self.iniciaServidor() 
+        self.sock = self.iniciaServidor()
+    
+    def enviar(self, data):
+        self.sock.send(bytearray(data, 'utf-8'))
+
+    def receber(self):
+        data = self.sock.recv(1024)
+        if data:
+            return data.decode('utf-8')
+        return None
 
 
     def iniciaServidor(self):
@@ -83,23 +91,51 @@ class Server:
 
         return clisock, endr
 
+    def encerraConexaoComCliente(self, clisock):
+        print(str(self.conexoes[clisock]) + '-> encerrou')
+        del self.conexoes[clisock] #retira o cliente da lista de conexoes ativas
+        entradas.remove(clisock) #retira o socket do cliente das entradas do select
+        clisock.close() # encerra a conexao com o cliente
+
+    def enviarParaCliente(self, clisock, data):
+        '''Envia dados para o cliente
+        Entrada: socket da conexao e endereco do cliente
+        Saida: '''
+
+        # envia mensagem de resposta
+        clisock.send(bytearray(data, 'utf-8'))
+    
+    def receberDoCliente(self, clisock):
+        '''Recebe dados do cliente
+        Entrada: socket da conexao e endereco do cliente
+        Saida: '''
+
+        #recebe dados do cliente
+        data = clisock.recv(1024)
+
+        if not data: # dados vazios: cliente encerrou
+            return None
+        
+        return data.decode('utf-8')
+
+
     def atendeRequisicoes(self, clisock):
         '''Recebe mensagens e as envia de volta para o cliente (ate o cliente finalizar)
         Entrada: socket da conexao e endereco do cliente
         Saida: '''
 
         #recebe dados do cliente
-        data = clisock.recv(1024) 
+        data = self.receberDoCliente(clisock)
+
         if not data: # dados vazios: cliente encerrou
-            print(str(self.conexoes[clisock]) + '-> encerrou')
-            del self.conexoes[clisock] #retira o cliente da lista de conexoes ativas
-            entradas.remove(clisock) #retira o socket do cliente das entradas do select
-            clisock.close() # encerra a conexao com o cliente
-            return 
-        print(str(self.conexoes[clisock]) + ': ' + str(data, encoding='utf-8'))
+            self.encerraConexaoComCliente(clisock)
+            return
+
+        print(str(self.conexoes[clisock]) + ': ' + data)
 
         response = self.proxy.redirecionar(data) # redireciona a requisicao para o proxy
-        clisock.send(bytearray(response, 'utf-8')) # ecoa os dados para o cliente
+
+        self.enviarParaCliente(clisock, response) # ecoa os dados para o cliente
 
     def fechaServidor(self):
         '''Fecha o socket do servidor'''
@@ -113,46 +149,61 @@ class Server:
 class Proxy:
 
     def __init__(self):
-        self.READ_PORT = 6006 # Porta do servidor de leitura
-        self.WRITE_PORT = 6007 # Porta do servidor de escrita
-    
+        self.READ_PORT = 6007 # Porta do servidor de leitura
+        self.WRITE_PORT = 6008 # Porta do servidor de escrita
+        self.DELETE_PORT = 6009 # Porta do servidor de deletar
+
+    '''
+    Redireciona a requisicao para o servidor correto
+
+    Entrada: a requisicao em string
+    Saida: a resposta do servidor em string
+    '''
     def redirecionar(self, data):
         cliente = None
-        # Se data contem substring '::", isto índica que o cliente quer inserir uma definicao
-        if data.decode('utf-8').find('::') != -1:
+
+        method = data.split(' ')[0]
+        if method == 'DELETE':
+            client = Client(self.DELETE_PORT)
+        elif method == 'GET':
+            client = Client(self.READ_PORT)
+        elif method == 'POST':
             client = Client(self.WRITE_PORT)
         else:
-        # Se não, cliente quer consultar uma definicao
-            client = Client(self.READ_PORT)
+            return 'Metodo nao suportado'
 
         client.enviar(data)
-        data = client.receber()
-        client.desconectar()
 
-        return data
+        return client.receber()
         
 
 def main():
-	'''Inicializa e implementa o loop principal (infinito) do servidor'''
-	server = Server()
-	print("Pronto para receber conexoes...")
-	while True:
-		#espera por qualquer entrada de interesse
-		leitura, escrita, excecao = select.select(entradas, [], [])
+    '''Inicializa e implementa o loop principal (infinito) do servidor'''
+    server = Server()
+    print("Pronto para receber conexoes...")
+    while True:
+        #espera por qualquer entrada de interesse
+        leitura, escrita, excecao = select.select(entradas, [], [])
 
-		#tratar todas as entradas prontas
-		for pronto in leitura:
-			if pronto == server.sock:  #pedido novo de conexao
-				clisock, endr = server.aceitaConexao()
-				print ('Conectado com: ', endr)
+        #tratar todas as entradas prontas
+        for pronto in leitura:
+            if pronto == server.sock:  #pedido novo de conexao
+                clisock, endr = server.aceitaConexao()
+                print ('Conectado com: ', endr)
 
-			elif pronto == sys.stdin: #entrada padrao
-				cmd = input()
-				if cmd == 'fim': #solicitacao de finalizacao do servidor
-					server.fechaServidor()
-				elif cmd == 'hist': #outro exemplo de comando para o servidor
-					print(str(conexoes.values()))
-			else: #nova requisicao de cliente
-				server.atendeRequisicoes(pronto)
+            elif pronto == sys.stdin: #entrada padrao
+                cmd = input()
+                if cmd == 'fim': #solicitacao de finalizacao do servidor
+                    server.fechaServidor()
+                elif cmd == 'deletar': #solitacao de deletar uma chave
+                    print('Qual chave deseja deletar?')
+                    chave = input()
+                    data = f"DELETE {chave}"
+                    msg = server.proxy.redirecionar(data)
+                    print(msg)
+                elif cmd == 'hist': #outro exemplo de comando para o servidor
+                    print(str(conexoes.values()))
+            else: #nova requisicao de cliente
+                server.atendeRequisicoes(pronto)
 
 main()

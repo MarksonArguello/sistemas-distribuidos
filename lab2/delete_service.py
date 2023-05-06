@@ -5,29 +5,32 @@ class Arquivo:
     def __init__(self):
         self.nome = "dicionario.txt"
     
-    def escrever(self, data):
+    def deletar(self, data):
+
         chave = data.split(" ")[1]
-        valor = data.split(" ")[2]
 
-        data = f"{chave}::{valor}"
+        with open(self.nome, 'r+') as fp:
+            # read an store all lines into list
+            lines = fp.readlines()
+            # move file pointer to the beginning of a file
+            fp.seek(0)
+            # truncate the file
+            fp.truncate()
 
-        arquivo = open(self.nome, "a")
-        arquivo.write(data + "\n")
-        arquivo.close()
+            for line in lines:
+                if line.split("::")[0].lower() != chave.lower():
+                    fp.write(line)
 
-        print(f"Mensagem {data} escrita com sucesso!")
 
-        return "Mensagem escrita com sucesso!"
+        print("{" + chave + "} deletado com sucesso!")
+        return "Deletado com sucesso!"
 
 
 class Server:
-    '''Como não podemos ter mais de uma escrita no arquivo ao mesmo tempo, o servidor de escrita
-    é implementado de maneira mais simples, sem o uso de threads ou de aceitar diversas conexões.
-        Entrada: socket da conexao e endereco do cliente
-        Saida: '''
+
     def __init__(self):
         self.HOST = 'localhost' # '' possibilita acessar qualquer endereco alcancavel da maquina local
-        self.PORT = 6008 # porta onde chegarao as mensagens para essa aplicacao
+        self.PORT = 6009 # porta onde chegarao as mensagens para essa aplicacao
         self.arquivo = Arquivo()
 
     def run(self):
@@ -51,7 +54,7 @@ class Server:
             # depois de conectar-se, espera uma mensagem (chamada pode ser BLOQUEANTE))
             data = conn.recv(1024) 
 
-            msg = self.arquivo.escrever(data.decode('utf-8'))
+            msg = self.arquivo.deletar(data.decode('utf-8'))
 
             # envia mensagem de resposta
             conn.send(bytearray(msg, 'utf-8')) 

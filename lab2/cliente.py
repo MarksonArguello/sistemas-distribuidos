@@ -18,12 +18,12 @@ class Aplicacao:
         valor = input()
 
         # Retorna a chave e o valor concatenadas no formato chave::valor
-        return chave + "::" + valor
+        return f"POST {chave} {valor}"
 
     def consultar_palavra(self):
         print("Digite a chave: ")
         palavra = input()
-        return palavra
+        return f"GET {palavra}"
     
     def run(self):
         while True:
@@ -38,12 +38,13 @@ class Aplicacao:
 
             elif opcao == '2':
                 # recebe a chave
-                data = input()
+                data = self.consultar_palavra()
                 # envia mensagem para o par conectado 
                 self.client.enviar(data)
 
             elif opcao == '3':
                 # Termina o loop
+                self.client.desconectar()
                 break
 
             else:
@@ -51,7 +52,9 @@ class Aplicacao:
                 continue
             
             # imprime a mensagem recebida
+            print()
             print(self.client.receber())
+            print()
 
 class Client:
 
@@ -75,7 +78,10 @@ class Client:
         self.sock.send(bytearray(data, 'utf-8'))
 
     def receber(self):
-        return self.sock.recv(1024).decode('utf-8')
+        data = self.sock.recv(1024)
+        if data:
+            return data.decode('utf-8')
+        return None
 
 # Cria cliente
 aplicacao_cliente = Aplicacao()
