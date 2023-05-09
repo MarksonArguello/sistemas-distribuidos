@@ -7,13 +7,16 @@ class Arquivo:
     
     # Retorna todos os valores para a chave recebida
     def ler(self, data):
-        chave = data.split(" ")[1]
+        chave = data
 
         valores = []
         with open(self.nome, 'r') as f:
             for linha in f:
                 if linha.split("::")[0].lower() == chave.lower():
                     valores.append(linha.split("::")[1].strip("\n "))
+
+        # Ordena os valores
+        valores.sort()
 
         if len(valores) > 0:
             print(f"Chave {chave} encontrada")
@@ -59,7 +62,7 @@ class Server:
             msg = self.arquivo.ler(data.decode('utf-8'))
 
             # envia mensagem de resposta
-            conn.send(bytearray(msg, 'utf-8')) 
+            conn.sendall(bytearray(msg, 'utf-8')) 
 
             # fecha o socket da conexao
             conn.close()

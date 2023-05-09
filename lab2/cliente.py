@@ -75,7 +75,7 @@ class Client:
         self.sock.close()
 
     def enviar(self, data):
-        self.sock.send(bytearray(data, 'utf-8'))
+        self.sock.sendall(bytearray(data, 'utf-8'))
 
     def receber(self):
         data = self.sock.recv(1024)

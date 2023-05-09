@@ -6,8 +6,10 @@ class Arquivo:
         self.nome = "dicionario.txt"
     
     def escrever(self, data):
-        chave = data.split(" ")[1]
-        valor = data.split(" ")[2]
+        print(data)
+
+        chave = data.split(" ")[0]
+        valor = data.split(" ")[1]
 
         data = f"{chave}::{valor}"
 
@@ -54,7 +56,7 @@ class Server:
             msg = self.arquivo.escrever(data.decode('utf-8'))
 
             # envia mensagem de resposta
-            conn.send(bytearray(msg, 'utf-8')) 
+            conn.sendall(bytearray(msg, 'utf-8')) 
 
             # fecha o socket da conexao
             conn.close()

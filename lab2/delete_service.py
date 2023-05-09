@@ -7,7 +7,7 @@ class Arquivo:
     
     def deletar(self, data):
 
-        chave = data.split(" ")[1]
+        chave = data
 
         with open(self.nome, 'r+') as fp:
             # read an store all lines into list
@@ -57,7 +57,7 @@ class Server:
             msg = self.arquivo.deletar(data.decode('utf-8'))
 
             # envia mensagem de resposta
-            conn.send(bytearray(msg, 'utf-8')) 
+            conn.sendall(bytearray(msg, 'utf-8')) 
 
             # fecha o socket da conexao
             conn.close()
