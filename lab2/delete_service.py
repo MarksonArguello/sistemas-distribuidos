@@ -10,13 +10,14 @@ class Arquivo:
         chave = data
 
         with open(self.nome, 'r+') as fp:
-            # read an store all lines into list
+            # Le todas as linhas do arquivo
             lines = fp.readlines()
-            # move file pointer to the beginning of a file
+            # Volta o ponteiro para o inicio do arquivo
             fp.seek(0)
-            # truncate the file
+            # Limpa o arquivo
             fp.truncate()
 
+            # Escreve todas as linhas, menos a que contem a chave
             for line in lines:
                 if line.split("::")[0].lower() != chave.lower():
                     fp.write(line)

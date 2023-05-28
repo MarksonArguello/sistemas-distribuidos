@@ -17,12 +17,12 @@ class Aplicacao:
         print("Digite o valor: ")
         valor = input()
 
-        # Retorna a chave e o valor concatenadas no formato chave::valor
         return f"POST {chave} {valor}"
 
     def consultar_palavra(self):
         print("Digite a chave: ")
         palavra = input()
+
         return f"GET {palavra}"
     
     def run(self):
@@ -31,7 +31,7 @@ class Aplicacao:
             opcao = self.imprime_menu()
 
             if opcao == '1':
-                # recebe a definicao
+                # recebe o valor e a chave
                 data = self.inserir_definicao()
                 # envia mensagem para o par conectado 
                 self.client.enviar(data)

@@ -267,7 +267,7 @@ def main():
     while True:
         #espera por qualquer entrada de interesse
         leitura, escrita, excecao = select.select(entradas, [], [])
-        #print(str(leitura))
+        
         #tratar todas as entradas prontas
         for pronto in leitura:
             if pronto == server.sock:  #pedido novo de conexao
